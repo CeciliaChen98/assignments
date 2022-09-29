@@ -34,7 +34,9 @@ struct node* pop(struct node* top){
   if(top ==NULL){
     return NULL;
   }
+  struct node* temp= top;
   top = top->next;
+  free(temp);
   return top;
 }
 
@@ -63,11 +65,11 @@ int main(int argc, char** argv) {
   ch = fgetc(infile);
   int i = 1;
   int j = 1;
-  struct node* top= malloc(sizeof(struct node));
+  struct node* top;
   top = NULL;
   
   struct charInfo* temp=malloc(sizeof(struct charInfo));
-  struct charInfo* topChar = malloc(sizeof(struct charInfo));
+  struct charInfo* topChar;
   while(ch !=EOF){
     if(ch == '{'){
       temp->val = '{';
@@ -77,14 +79,13 @@ int main(int argc, char** argv) {
     }
     else if(ch=='}'){
       topChar = getTop(top);
-      top=pop(top);
       if(topChar==NULL){
         print2(i,j);
       }
       else if(topChar->val=='{'){
         print1(topChar,i,j);
       }
-    
+      top=pop(top);
       
     }
     else if(ch == '\n'){
@@ -96,11 +97,11 @@ int main(int argc, char** argv) {
   }
   while(top!=NULL){
     topChar=getTop(top);
-    top=pop(top); 
     print2(topChar->line,topChar->column);
+    top=pop(top); 
   }
   free(top);
-
+  free(temp);
   fclose(infile);
   return 0;
 }
