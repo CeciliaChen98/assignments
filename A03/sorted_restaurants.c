@@ -47,7 +47,6 @@ int main() {
   printf("Enter a number of restaurants: ");
   scanf("%d",&num);
   struct node* list;
-  list = malloc(sizeof(struct node));
   list = NULL;
   char tempName[32];
   int tempOpen;
