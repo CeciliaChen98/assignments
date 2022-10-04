@@ -12,6 +12,7 @@ struct cupcake {
   struct flavor* frosting;
 };
 
+
 struct flavor* makeFlavor(const char* name, float cals) {
   struct flavor* c = malloc(sizeof(struct flavor));
   if (c == NULL) {
@@ -25,6 +26,19 @@ struct flavor* makeFlavor(const char* name, float cals) {
 }
 
 void computeCalories(struct cupcake* cakes, int n) {
+  float totalCalories;
+  int maxIndex;
+  float maxCalories;
+  for(int i=0;i<n;i++){
+    totalCalories = cakes[i].cake->calories;
+    totalCalories+= cakes[i].frosting->calories;
+    if(totalCalories>maxCalories){
+      maxCalories = totalCalories;
+      maxIndex = i;
+    }
+    printf("Cupcake %d) %s with %s frosting (calories: %.1f)\n",i,cakes[i].cake->name,cakes[i].frosting->name,totalCalories);
+  }
+  printf("The cupcake with the most calories is %s with %s frosting\n",cakes[maxIndex].cake->name,cakes[maxIndex].frosting->name);
 }
 
 int main() {
@@ -42,4 +56,9 @@ int main() {
   cakes[2].frosting = strawberry; 
 
   computeCalories(cakes, 3);
+
+  free(redVelvet);
+  free(chocolate);
+  free(strawberry);
+  free(creamcheese);
 }
