@@ -27,16 +27,23 @@ struct node* insert_sorted(struct node* head, struct Restaurant* newRestaurant){
   }
   else{
     struct node* temp = head;
-    while(temp!=NULL){
+    while(temp->next!=NULL){
       if(newRestaurant->stars<temp->data.stars){
         temp=temp->next;
       }else{
         break;
       }
     }
-  newNode->data = *newRestaurant;
-  newNode->next = temp->next;
-  temp-> next = newNode;
+    if(temp->next==NULL){
+      newNode->data = *newRestaurant;
+      newNode->next = temp ->next;
+      temp-> next = newNode;
+    }else{
+      newNode->data = temp->data;
+      newNode ->next =temp-> next;
+      temp->data = *newRestaurant;
+      temp->next =newNode;
+    }
   }
   return head;
 
