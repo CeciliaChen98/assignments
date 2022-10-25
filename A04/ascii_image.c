@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "read_ppm.h"
-#include "read_ppm.c"
+
 
 char pixelToChar(struct ppm_pixel pixel){
   float i = (pixel.blue+pixel.red+pixel.green)/3.0;

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "read_ppm.h"
-#include "read_ppm.c"
+
 
 int main() {
   // load feep-raw and print out the grid of pixels
