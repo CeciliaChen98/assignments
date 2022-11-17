@@ -17,7 +17,7 @@ void *malloc (size_t size) {
   struct chunk *prev = NULL;
   
   while(next != NULL) {
-  if (next->size >= size && next->used==0) {
+  if (next->size >= size) {
     if(prev != NULL) { 
       prev->next = next->next;
     } 
