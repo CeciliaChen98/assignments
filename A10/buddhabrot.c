@@ -11,9 +11,11 @@
 #include <string.h>
 
 pthread_barrier_t mybarrier;
+pthread_mutex_t count_mutex;
+
 int size = 480;
 float xmin = -2.0;
-float xmax = 0.47;
+float xmax = 1.0;
 float ymin = -1.12;
 float ymax = 1.12;
 int maxIterations = 1000;
@@ -26,13 +28,13 @@ struct thread_data{
   int end_j;
   int **membershipint;
   int **membershipCount;
-  int maxCount;
+  int *maxCount;
   struct ppm_pixel **paletteData;
 };
 
 void* determine_membership(void *userdata){
   struct thread_data *data = (struct thread_data *)userdata;
-  printf("Thread %ld)sub-image block: cols (%d,%d) to rows(%d,%d)\n",pthread_self(),data->start_i,data->end_i,data->start_j,data->end_j);
+  printf("Thread %ld)sub-image block: rows (%d,%d) to cols(%d,%d)\n",pthread_self(),data->start_i,data->end_i,data->start_j,data->end_j);
   for(int i = data->start_i ; i < data->end_i ; i++){
     for(int j = data->start_j ; j < data->end_j ; j++){
       float xfrac = j / (float)size;
@@ -64,8 +66,7 @@ void* compute_counts(void *userdata){
   struct thread_data *data = (struct thread_data *)userdata;
   for(int i = data->start_i ; i < data->end_i ; i++){
     for(int j = data->start_j ; j < data->end_j ; j++){
-      data->membershipCount[i][j]=0;
-      if(data->membershipint[i][j])continue;
+      if(data->membershipint[i][j]!=0)continue;
 
       float xfrac = j / (float)size;
       float yfrac = i / (float)size;
@@ -74,20 +75,26 @@ void* compute_counts(void *userdata){
 
       float x = 0;
       float y = 0;
-      int count = 0;
+      int yrow = 0;
+      int xcol = 0;
+
       while (x*x + y*y < 2*2){
         float xtmp = x*x - y*y + x0;
         y = 2*x*y + y0;
         x = xtmp;
         
-        float yrow = round(size * (y - ymin)/(ymax - ymin));
-        float xcol = round(size * (x - xmin)/(xmax - xmin));
+        yrow = round(size * (y - ymin)/(ymax - ymin));
+        xcol = round(size * (x - xmin)/(xmax - xmin));
 
         if (yrow < 0 || yrow >= size) continue;
         if (xcol < 0 || xcol >= size) continue;
-        data->membershipCount[i][j]++;
-        if(data->membershipCount[i][j]>data->maxCount) data->maxCount=data->membershipCount[i][j];
+      
+        pthread_mutex_lock(&count_mutex);
+        data->membershipCount[yrow][xcol]++;
+        if(data->membershipCount[yrow][xcol]>*data->maxCount) *data->maxCount=data->membershipCount[yrow][xcol];
+        pthread_mutex_unlock(&count_mutex);
       }
+
     }
   }
   return (void*)NULL;
@@ -104,7 +111,7 @@ void* compute_color(void *userdata){
       float value = 0.0;
 
       if(data->membershipCount[i][j]>0){
-        value = log(data->membershipCount[i][j]) / log(data->maxCount);
+        value = log(data->membershipCount[i][j]) / log(*data->maxCount);
         value = pow(value, factor);
       }
       temp->red = value*255;
@@ -171,13 +178,14 @@ int main(int argc, char* argv[]) {
   //generate colors
 
 
-  pthread_barrier_init(&mybarrier,NULL,4);
-
   pthread_t threads[4];
   struct thread_data data[4];
 
+  pthread_barrier_init(&mybarrier,NULL,4);
+  pthread_mutex_init(&count_mutex, NULL);
   gettimeofday(&tstart, NULL);
 
+  int max =0;
   for(int i=0;i<2;i++){
     for(int j=0;j<2;j++){
       data[2*i+j].membershipint = membership;
@@ -187,7 +195,7 @@ int main(int argc, char* argv[]) {
       data[2*i+j].end_i = (i+1)*size/2;
       data[2*i+j].start_j = j*size/2;
       data[2*i+j].end_j = (j+1)*size/2;
-      data[2*i+j].maxCount = 0;
+      data[2*i+j].maxCount = &max;
       pthread_create(&threads[2*i+j],NULL,start,(void*)&data[2*i+j]);
     }
   }
@@ -195,18 +203,18 @@ int main(int argc, char* argv[]) {
   for(int i=0;i<4;i++){
     pthread_join(threads[i],NULL);
   }
-
+  pthread_mutex_destroy(&count_mutex);
+  pthread_barrier_destroy(&mybarrier);
   
   gettimeofday(&tend, NULL);
 
   timer = tend.tv_sec - tstart.tv_sec + (tend.tv_usec - tstart.tv_usec)/1.e6;
   printf("Computed mandelbrot set (%d x %d)in %g seconds\n",size,size, timer);
-
   char size_str[64];
   sprintf(size_str,"%d",size);
   char time_str[64];
   sprintf(time_str,"%ld",time(0));
-  char filename[64] ="mandelbrot-";
+  char filename[64] ="buddhabrot-";
   strcat(filename,size_str);
   strcat(filename,"-");
   strcat(filename,time_str);
